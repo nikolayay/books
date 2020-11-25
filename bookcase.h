@@ -62,6 +62,21 @@ makeBookcase(char *arr, int id, int w, int h)
     return b;
 }
 
+bookcase_t *copy_bookcase(bookcase_t *b)
+{
+    bookcase_t *cb = (bookcase_t *)malloc(sizeof(struct Bookcase));
+
+    cb->id = b->id;
+
+    cb->w = b->w;
+    cb->h = b->h;
+    char *arr = (char *)malloc(b->w * b->h * sizeof(char));
+    memcpy(arr, b->shelves, cb->w * cb->h);
+    cb->shelves = arr;
+
+    return cb;
+}
+
 bool is_shelf_empty(bookcase_t *b, int shelf)
 {
     int w = b->w;
@@ -135,26 +150,47 @@ bool is_equal(bookcase_t *a, bookcase_t *b)
 }
 
 // find the last book on shelf
-char find_book(bookcase_t *b, int shelf)
+int find_last_book_ix(bookcase_t *b, int shelf)
 {
     int w = b->w;
-    char book = 'Z';
+    int book_ix = -1;
+
+    if (is_shelf_empty(b, shelf))
+    {
+        return book_ix;
+    }
 
     for (int x = 1; x < w; x++)
     {
         if (b->shelves[shelf * w + x] == '.')
         {
-            book = b->shelves[shelf * w + (x - 1)];
+            book_ix = shelf * w + (x - 1);
+            break;
         }
     }
 
-    return book;
+    return book_ix;
+}
+
+// find the last book on shelf
+char find_book(bookcase_t *b, int shelf)
+{
+    return b->shelves[find_last_book_ix(b, shelf)];
 }
 
 // returns copy of b without the last book on specified shelf
 bookcase_t *pop_book(bookcase_t *b, int shelf)
 {
-    return b;
+    // make copy of b
+    bookcase_t *cb = copy_bookcase(b);
+    int w = cb->w;
+
+    // get last book on shelf and replace it with a dot
+    int last_book_ix = find_last_book_ix(cb, shelf);
+
+    cb->shelves[last_book_ix] = '.';
+
+    return cb;
 }
 
 // returns copy of b with speicified book on the end of shelf
@@ -222,10 +258,16 @@ void test()
     assert(is_equal(before, before));
     assert(!is_equal(before, after));
 
+    // test copy
+    bookcase_t *after_copy = copy_bookcase(after);
+    assert(is_equal(after_copy, after));
+
     // test pop book
     char book = find_book(before, 1);
     assert(book == 'R');
     bookcase_t *before_pop = pop_book(before, 1);
+    print_bookcase(before_pop);
+    print_bookcase(popped);
     assert(is_equal(before_pop, popped));
 
     // test push book
