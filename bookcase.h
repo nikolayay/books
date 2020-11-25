@@ -115,8 +115,10 @@ void print_bookcase(bookcase_t *b)
 
 void test()
 {
+    // ! happy
+
+    bookcase_t *happy = readBookcase("tests/happy.txt");
     // test happy shelf
-    bookcase_t *happy = readBookcase("happy.txt");
     assert(is_shelf_happy(happy, 0));
     assert(is_shelf_happy(happy, 1));
 
@@ -125,7 +127,8 @@ void test()
 
     free(happy);
 
-    bookcase_t *sad = readBookcase("sad.txt");
+    // ! unhappy
+    bookcase_t *sad = readBookcase("tests/sad.txt");
 
     // test unhappy shelf
     assert(!is_shelf_happy(sad, 0));
@@ -137,11 +140,13 @@ void test()
 
     free(sad);
 
-    // test make baby case from parent case
-
-    // test pop book
+    // ! test pop book
+    bookcase_t *before = readBookcase("tests/sad.txt");
+    bookcase_t *after = readBookcase("tests/sad.txt");
 
     // test push book
+
+    // test make baby case from parent case
 
     // test some sort of flow
 
