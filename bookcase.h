@@ -62,6 +62,21 @@ makeBookcase(char *arr, int id, int w, int h)
     return b;
 }
 
+bool is_shelf_empty(bookcase_t *b, int shelf)
+{
+    int w = b->w;
+
+    for (int x = 0; x < w; x++)
+    {
+        char cur_book = b->shelves[shelf * w + x];
+        if (cur_book != '.')
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
 bool is_shelf_happy(bookcase_t *b, int shelf)
 {
     int w = b->w;
@@ -92,6 +107,62 @@ bool is_case_happy(bookcase_t *b)
     return true;
 }
 
+bool is_equal(bookcase_t *a, bookcase_t *b)
+{
+    int w, h;
+    if (a->w != b->w || a->h != b->h)
+    {
+        return false;
+    }
+
+    w = b->w;
+    h = b->h;
+
+    for (int y = 0; y < h; y++)
+    {
+        for (int x = 0; x < w; x++)
+        {
+            char book_a = a->shelves[y * w + x];
+            char book_b = b->shelves[y * w + x];
+            if (book_a != book_b)
+            {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+// find the last book on shelf
+char find_book(bookcase_t *b, int shelf)
+{
+    int w = b->w;
+    char book = 'Z';
+
+    for (int x = 1; x < w; x++)
+    {
+        if (b->shelves[shelf * w + x] == '.')
+        {
+            book = b->shelves[shelf * w + (x - 1)];
+        }
+    }
+
+    return book;
+}
+
+// returns copy of b without the last book on specified shelf
+bookcase_t *pop_book(bookcase_t *b, int shelf)
+{
+    return b;
+}
+
+// returns copy of b with speicified book on the end of shelf
+bookcase_t *push_book(bookcase_t *b, int shelf, char book)
+{
+    return b;
+}
+
 void print_bookcase(bookcase_t *b)
 {
     printf("[");
@@ -115,8 +186,11 @@ void print_bookcase(bookcase_t *b)
 
 void test()
 {
-    // ! happy
+    bookcase_t *empty = readBookcase("tests/empty.txt");
+    assert(is_shelf_empty(empty, 0));
+    assert(!is_shelf_empty(empty, 1));
 
+    // ! happy
     bookcase_t *happy = readBookcase("tests/happy.txt");
     // test happy shelf
     assert(is_shelf_happy(happy, 0));
@@ -140,11 +214,23 @@ void test()
 
     free(sad);
 
-    // ! test pop book
-    bookcase_t *before = readBookcase("tests/sad.txt");
-    bookcase_t *after = readBookcase("tests/sad.txt");
+    // ! manipulation
+    bookcase_t *before = readBookcase("tests/before.txt");
+    bookcase_t *popped = readBookcase("tests/popped.txt");
+    bookcase_t *after = readBookcase("tests/after.txt");
+
+    assert(is_equal(before, before));
+    assert(!is_equal(before, after));
+
+    // test pop book
+    char book = find_book(before, 1);
+    assert(book == 'R');
+    bookcase_t *before_pop = pop_book(before, 1);
+    assert(is_equal(before_pop, popped));
 
     // test push book
+    bookcase_t *before_push = push_book(before_pop, 0, book);
+    assert(is_equal(before_push, after));
 
     // test make baby case from parent case
 
