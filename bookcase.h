@@ -172,6 +172,13 @@ int find_last_book_ix(bookcase_t *b, int shelf)
     return book_ix;
 }
 
+// find free space, return -1 if none found
+int find_free_space(bookcase_t *b, int shelf)
+{
+    int last_book_ix = find_last_book_ix(b, shelf);
+    return last_book_ix ? last_book_ix < b->w : -1;
+}
+
 // find the last book on shelf
 char find_book(bookcase_t *b, int shelf)
 {
@@ -183,7 +190,6 @@ bookcase_t *pop_book(bookcase_t *b, int shelf)
 {
     // make copy of b
     bookcase_t *cb = copy_bookcase(b);
-    int w = cb->w;
 
     // get last book on shelf and replace it with a dot
     int last_book_ix = find_last_book_ix(cb, shelf);
@@ -196,7 +202,16 @@ bookcase_t *pop_book(bookcase_t *b, int shelf)
 // returns copy of b with speicified book on the end of shelf
 bookcase_t *push_book(bookcase_t *b, int shelf, char book)
 {
-    return b;
+    // make copy of b
+    bookcase_t *cb = copy_bookcase(b);
+
+    // get last free space on shelf and replace it with the book
+    int free_space_ix = find_free_space(cb, shelf);
+
+    cb->shelves[free_space_ix] = book;
+
+    return cb;
+
 }
 
 void print_bookcase(bookcase_t *b)
