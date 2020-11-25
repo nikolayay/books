@@ -14,11 +14,11 @@ struct Bookcase
 };
 
 typedef struct Bookcase bookcase_t;
-bookcase_t *readBookcase(char *filename);
-bookcase_t *makeBookcase(char *arr, int id, int w, int h);
+bookcase_t *read_bookcase(char *filename);
+bookcase_t *make_bookcase(char *arr, int id, int w, int h);
 void print_bookcase(bookcase_t *b);
 
-bookcase_t *readBookcase(char *filename)
+bookcase_t *read_bookcase(char *filename)
 {
     FILE *fp;
     char buff[255];
@@ -41,7 +41,7 @@ bookcase_t *readBookcase(char *filename)
         }
     }
 
-    bookcase_t *b = makeBookcase(arr, 0, w, h);
+    bookcase_t *b = make_bookcase(arr, 0, w, h);
 
     fclose(fp);
 
@@ -49,7 +49,7 @@ bookcase_t *readBookcase(char *filename)
 }
 
 bookcase_t *
-makeBookcase(char *arr, int id, int w, int h)
+make_bookcase(char *arr, int id, int w, int h)
 {
     bookcase_t *b = (bookcase_t *)malloc(sizeof(struct Bookcase));
 
@@ -168,11 +168,16 @@ bool is_equal(bookcase_t *a, bookcase_t *b)
 int find_last_book_ix(bookcase_t *b, int shelf)
 {
     int w = b->w;
-    int book_ix = -1;
+    int book_ix;
 
     if (is_shelf_empty(b, shelf))
     {
-        return book_ix;
+        book_ix = shelf * w;
+    }
+
+    if (is_shelf_full(b, shelf))
+    {
+        book_ix = shelf * w + (w - 1);
     }
 
     for (int x = 1; x < w; x++)
@@ -238,6 +243,20 @@ bookcase_t *push_book(bookcase_t *b, int shelf, char book)
     return cb;
 }
 
+// makes a child bookcase by popping last book from shelf_from and and pushing it onto shelf_to
+bookcase_t *make_baby(bookcase_t *b, int shelf_from, int shelf_to)
+{
+
+    char book = find_book(b, shelf_from);
+    bookcase_t *book_popped = pop_book(b, shelf_from);
+    bookcase_t *baby = push_book(book_popped, shelf_to, book);
+
+    // increment id from daddy
+    baby->id += 1;
+
+    return baby;
+}
+
 void print_bookcase(bookcase_t *b)
 {
     printf("[");
@@ -262,7 +281,7 @@ void print_bookcase(bookcase_t *b)
 void test()
 {
     // ! empty / full
-    bookcase_t *empty = readBookcase("tests/empty.txt");
+    bookcase_t *empty = read_bookcase("tests/empty.txt");
     assert(is_shelf_empty(empty, 0));
     assert(!is_shelf_full(empty, 1));
     assert(!is_shelf_empty(empty, 1));
@@ -271,7 +290,7 @@ void test()
     free(empty);
 
     // ! happy
-    bookcase_t *happy = readBookcase("tests/happy.txt");
+    bookcase_t *happy = read_bookcase("tests/happy.txt");
     // test happy shelf
     assert(is_shelf_happy(happy, 0));
     assert(is_shelf_happy(happy, 1));
@@ -282,7 +301,7 @@ void test()
     free(happy);
 
     // ! unhappy
-    bookcase_t *sad = readBookcase("tests/sad.txt");
+    bookcase_t *sad = read_bookcase("tests/sad.txt");
 
     // test unhappy shelf
     assert(!is_shelf_happy(sad, 0));
@@ -295,15 +314,15 @@ void test()
     free(sad);
 
     // !test copy
-    bookcase_t *full = readBookcase("tests/full.txt");
+    bookcase_t *full = read_bookcase("tests/full.txt");
     bookcase_t *full_copy = copy_bookcase(full);
     assert(is_equal(full_copy, full));
     free(full_copy);
 
     // ! manipulation
-    bookcase_t *before = readBookcase("tests/before.txt");
-    bookcase_t *popped = readBookcase("tests/popped.txt");
-    bookcase_t *after = readBookcase("tests/after.txt");
+    bookcase_t *before = read_bookcase("tests/before.txt");
+    bookcase_t *popped = read_bookcase("tests/popped.txt");
+    bookcase_t *after = read_bookcase("tests/after.txt");
 
     assert(is_equal(before, before));
     assert(!is_equal(before, after));
@@ -328,6 +347,25 @@ void test()
     free(before_pushed);
 
     // ! make baby case from parent
+    // single
+    bookcase_t *parent = read_bookcase("tests/parent.txt");
+    bookcase_t *child = read_bookcase("tests/child.txt");
+
+    bookcase_t *baby = make_baby(parent, 1, 0);
+
+    assert(is_equal(baby, child));
+
+    // from full shelf
+
+    bookcase_t *p_full = read_bookcase("tests/p_full.txt");
+    bookcase_t *c_full = read_bookcase("tests/c_full.txt");
+    book = find_book(p_full, 0);
+    assert(book == 'G');
+
+    bookcase_t *b_full = make_baby(p_full, 0, 1);
+    assert(is_equal(b_full, c_full));
+
+    print_bookcase(b_full);
 
     // ! test some sort of flow
 
