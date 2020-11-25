@@ -1,28 +1,13 @@
 
 #include "bookcase.h"
 
-enum
+int make_happy(bookcase_t *p, int count)
 {
-    RED,
-    BLACK,
-    GREEN,
-    YELLOW,
-    BLUE,
-    MAGNETA,
-    CYAN,
-    WHITE,
-    EMPTY
-};
-
-int main(int argc, char const *argv[])
-{
-
-    test();
-
-    bookcase_t *p = read_bookcase("tests/p0.txt");
-
-    // a lot of babies
-    int count = 0;
+    // if (count > 12)
+    // {
+    //     return count;
+    // }
+    // make babies
 
     for (int shelf_from = 0; shelf_from < p->h; shelf_from++)
     {
@@ -34,14 +19,37 @@ int main(int argc, char const *argv[])
             {
 
                 bookcase_t *baby = make_baby(p, shelf_from, shelf_to);
-                count++;
                 print_bookcase(baby);
-                free(baby);
+
+                if (is_case_happy(baby))
+                {
+                    print_bookcase(baby);
+                    return count + 1;
+                }
+                else
+                {
+                    return make_happy(baby, count + 1);
+                }
             }
         }
     }
 
-    printf("offspring count: %d\n", count);
+    //printf("offspring count: %d\n", count);
+}
+
+int main(int argc, char const *argv[])
+{
+
+    test();
+
+    bookcase_t *p = read_bookcase("tests/p0.txt");
+
+    // allocate max possible amount for generation
+    bookcase_t *gen = (bookcase_t *)malloc(sizeof(bookcase_t *) * p->h * (p->h - 1));
+    print_bookcase(p);
+    int count = make_happy(p, 0);
+
+    printf("count: %d", count);
 
     return 0;
 }

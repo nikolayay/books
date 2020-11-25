@@ -120,7 +120,7 @@ bool is_shelf_happy(bookcase_t *b, int shelf)
         }
     }
 
-    return true;
+    return is_shelf_full(b, shelf) || is_shelf_empty(b, shelf);
 }
 
 bool is_case_happy(bookcase_t *b)
@@ -290,28 +290,20 @@ void test()
     free(empty);
 
     // ! happy
+    bookcase_t *happy_fake = read_bookcase("tests/happy_fake.txt");
     bookcase_t *happy = read_bookcase("tests/happy.txt");
     // test happy shelf
     assert(is_shelf_happy(happy, 0));
     assert(is_shelf_happy(happy, 1));
+    assert(!is_shelf_happy(happy_fake, 0));
+    assert(!is_shelf_happy(happy_fake, 1));
 
     // test happy case
     assert(is_case_happy(happy));
+    assert(!is_case_happy(happy_fake));
 
     free(happy);
-
-    // ! unhappy
-    bookcase_t *sad = read_bookcase("tests/sad.txt");
-
-    // test unhappy shelf
-    assert(!is_shelf_happy(sad, 0));
-    assert(is_shelf_happy(sad, 1));
-    assert(!is_shelf_happy(sad, 2));
-
-    // test unhappy case
-    assert(!is_case_happy(sad));
-
-    free(sad);
+    free(happy_fake);
 
     // !test copy
     bookcase_t *full = read_bookcase("tests/full.txt");
@@ -364,8 +356,6 @@ void test()
 
     bookcase_t *b_full = make_baby(p_full, 0, 1);
     assert(is_equal(b_full, c_full));
-
-    print_bookcase(b_full);
 
     // ! test some sort of flow
 
