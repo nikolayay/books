@@ -5,20 +5,34 @@
 #include <stdbool.h>
 #include <assert.h>
 
-struct Bookcase
+#define NUM_COLOURS 8
+
+char colours[NUM_COLOURS] = {
+    'K',
+    'R',
+    'G',
+    'Y',
+    'B',
+    'M',
+    'C',
+    'W',
+};
+
+typedef struct
 {
     int id;
     int w;
     int h;
     char *shelves; // contigious in memory
-};
+} bookcase_t;
 
-typedef struct Bookcase bookcase_t;
 bookcase_t *read_bookcase(char *filename);
 bookcase_t *make_bookcase(char *arr, int id, int w, int h);
 void print_bookcase(bookcase_t *b);
+bool is_equal(bookcase_t *a, bookcase_t *b);
 
-bookcase_t *read_bookcase(char *filename)
+bookcase_t *
+read_bookcase(char *filename)
 {
     FILE *fp;
     char buff[255];
@@ -51,7 +65,7 @@ bookcase_t *read_bookcase(char *filename)
 bookcase_t *
 make_bookcase(char *arr, int id, int w, int h)
 {
-    bookcase_t *b = (bookcase_t *)malloc(sizeof(struct Bookcase));
+    bookcase_t *b = (bookcase_t *)malloc(sizeof(bookcase_t));
 
     b->id = id;
 
@@ -64,7 +78,7 @@ make_bookcase(char *arr, int id, int w, int h)
 
 bookcase_t *copy_bookcase(bookcase_t *b)
 {
-    bookcase_t *cb = (bookcase_t *)malloc(sizeof(struct Bookcase));
+    bookcase_t *cb = (bookcase_t *)malloc(sizeof(bookcase_t));
 
     cb->id = b->id;
 
@@ -120,17 +134,79 @@ bool is_shelf_happy(bookcase_t *b, int shelf)
         }
     }
 
-    return is_shelf_full(b, shelf) || is_shelf_empty(b, shelf);
+    return true;
+}
+
+bool in_colours(char book)
+{
+    for (int c = 0; c < NUM_COLOURS; c++)
+    {
+        if (colours[c] == book)
+        {
+            return true;
+        }
+    }
+    return book == '.';
+}
+
+bool in(char *arr, int size, char book)
+{
+    if (book == '.')
+    {
+        return false;
+    }
+    for (int i = 0; i < size; i++)
+    {
+
+        if (arr[i] == book)
+        {
+            return true;
+        }
+    }
+    return false;
 }
 
 bool is_case_happy(bookcase_t *b)
 {
+    // 1. each shelf only has books of one colour or is empty
     int h = b->h;
+    int w = b->w;
     for (int y = 0; y < h; y++)
     {
         if (!is_shelf_happy(b, y))
         {
             return false;
+        }
+    }
+
+    // 2. TODO all books of same colour are on same shelf -> do hash map
+    for (int pos = 0; pos < w; pos++)
+    {
+        char *books = malloc(h);
+        for (int shelf = 0; shelf < h; shelf++)
+        {
+            char book = b->shelves[shelf * w + pos];
+
+            if (in(books, h, book))
+            {
+                return false;
+            }
+
+            books[shelf] = book;
+        }
+    }
+
+    // 3. colour value is legal
+    for (int shelf = 0; shelf < h; shelf++)
+    {
+        for (int pos = 0; pos < w; pos++)
+        {
+            char book = b->shelves[shelf * w + pos];
+
+            if (!in_colours(book))
+            {
+                return false;
+            }
         }
     }
 
@@ -192,21 +268,32 @@ int find_last_book_ix(bookcase_t *b, int shelf)
     return book_ix;
 }
 
-// find free space, return -1 if none found
+// find free space
 int find_free_space(bookcase_t *b, int shelf)
 {
     int w = b->w;
-    int free_ix = -1;
+    int free_ix;
 
     for (int x = 1; x < w; x++)
     {
         if (b->shelves[shelf * w + x] == '.')
         {
-            return shelf * w + x;
+            free_ix = shelf * w + x;
+            break;
         }
     }
 
-    return -1;
+    if (is_shelf_empty(b, shelf))
+    {
+        free_ix = shelf * w;
+    }
+
+    if (is_shelf_full(b, shelf))
+    {
+        free_ix = shelf * w + (w - 1);
+    }
+
+    return free_ix;
 }
 
 // find the last book on shelf
@@ -290,20 +377,28 @@ void test()
     free(empty);
 
     // ! happy
-    bookcase_t *happy_fake = read_bookcase("tests/happy_fake.txt");
+
     bookcase_t *happy = read_bookcase("tests/happy.txt");
+
+    bookcase_t *h0 = read_bookcase("tests/h0.txt");
+    bookcase_t *h1 = read_bookcase("tests/h1.txt");
+    bookcase_t *h2 = read_bookcase("tests/h2.txt");
+    bookcase_t *h3 = read_bookcase("tests/h3.txt");
+
     // test happy shelf
     assert(is_shelf_happy(happy, 0));
     assert(is_shelf_happy(happy, 1));
-    assert(!is_shelf_happy(happy_fake, 0));
-    assert(!is_shelf_happy(happy_fake, 1));
 
     // test happy case
     assert(is_case_happy(happy));
-    assert(!is_case_happy(happy_fake));
+
+    assert(is_case_happy(h0));
+    assert(is_case_happy(h1));
+    assert(is_case_happy(h2));
+
+    assert(!is_case_happy(h3));
 
     free(happy);
-    free(happy_fake);
 
     // !test copy
     bookcase_t *full = read_bookcase("tests/full.txt");
@@ -348,7 +443,6 @@ void test()
     assert(is_equal(baby, child));
 
     // from full shelf
-
     bookcase_t *p_full = read_bookcase("tests/p_full.txt");
     bookcase_t *c_full = read_bookcase("tests/c_full.txt");
     book = find_book(p_full, 0);
@@ -357,7 +451,51 @@ void test()
     bookcase_t *b_full = make_baby(p_full, 0, 1);
     assert(is_equal(b_full, c_full));
 
-    // ! test some sort of flow
+    free(p_full);
+    free(c_full);
+    free(b_full);
 
-    printf("all test pass\n");
+    // bug 1
+    bookcase_t *y_from = read_bookcase("tests/y_from.txt");
+    bookcase_t *y_to = read_bookcase("tests/y_to.txt");
+    bookcase_t *y_tto = make_baby(y_from, 1, 0);
+
+    assert(is_equal(y_tto, y_to));
+
+    free(y_from);
+    free(y_to);
+    free(y_tto);
+
+    // bug 2
+    bookcase_t *y_from_2 = read_bookcase("tests/y_from_2.txt");
+    bookcase_t *y_to_2 = read_bookcase("tests/y_to_2.txt");
+
+    bookcase_t *y_tto_2 = make_baby(y_from_2, 1, 0);
+
+    assert(is_equal(y_tto_2, y_to_2));
+
+    free(y_from_2);
+    free(y_to_2);
+    free(y_tto_2);
+
+    bookcase_t *y_from_3 = read_bookcase("tests/y_from_3.txt");
+    for (int shelf_from = 0; shelf_from < y_from_3->h; shelf_from++)
+    {
+
+        for (int shelf_to = 0; shelf_to < y_from_3->h; shelf_to++)
+        {
+
+            if (!is_shelf_full(y_from_3, shelf_to) && !is_shelf_empty(y_from_3, shelf_from) && shelf_from != shelf_to)
+            {
+                bookcase_t *baby = make_baby(y_from_3, shelf_from, shelf_to);
+
+                if (is_case_happy(baby))
+                {
+                    //printf("FUCKING FINALLY\n");
+                }
+            }
+        }
+    }
+
+    // ! test some sort of flow
 }
