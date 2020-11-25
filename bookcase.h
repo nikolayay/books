@@ -92,6 +92,21 @@ bool is_shelf_empty(bookcase_t *b, int shelf)
     return true;
 }
 
+bool is_shelf_full(bookcase_t *b, int shelf)
+{
+    int w = b->w;
+
+    for (int x = 0; x < w; x++)
+    {
+        char cur_book = b->shelves[shelf * w + x];
+        if (cur_book == '.')
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
 bool is_shelf_happy(bookcase_t *b, int shelf)
 {
     int w = b->w;
@@ -175,8 +190,18 @@ int find_last_book_ix(bookcase_t *b, int shelf)
 // find free space, return -1 if none found
 int find_free_space(bookcase_t *b, int shelf)
 {
-    int last_book_ix = find_last_book_ix(b, shelf);
-    return last_book_ix ? last_book_ix < b->w : -1;
+    int w = b->w;
+    int free_ix = -1;
+
+    for (int x = 1; x < w; x++)
+    {
+        if (b->shelves[shelf * w + x] == '.')
+        {
+            return shelf * w + x;
+        }
+    }
+
+    return -1;
 }
 
 // find the last book on shelf
@@ -211,7 +236,6 @@ bookcase_t *push_book(bookcase_t *b, int shelf, char book)
     cb->shelves[free_space_ix] = book;
 
     return cb;
-
 }
 
 void print_bookcase(bookcase_t *b)
@@ -237,9 +261,14 @@ void print_bookcase(bookcase_t *b)
 
 void test()
 {
+    // ! empty / full
     bookcase_t *empty = readBookcase("tests/empty.txt");
     assert(is_shelf_empty(empty, 0));
+    assert(!is_shelf_full(empty, 1));
     assert(!is_shelf_empty(empty, 1));
+    assert(is_shelf_full(empty, 2));
+
+    free(empty);
 
     // ! happy
     bookcase_t *happy = readBookcase("tests/happy.txt");
@@ -265,6 +294,12 @@ void test()
 
     free(sad);
 
+    // !test copy
+    bookcase_t *full = readBookcase("tests/full.txt");
+    bookcase_t *full_copy = copy_bookcase(full);
+    assert(is_equal(full_copy, full));
+    free(full_copy);
+
     // ! manipulation
     bookcase_t *before = readBookcase("tests/before.txt");
     bookcase_t *popped = readBookcase("tests/popped.txt");
@@ -273,25 +308,28 @@ void test()
     assert(is_equal(before, before));
     assert(!is_equal(before, after));
 
-    // test copy
-    bookcase_t *after_copy = copy_bookcase(after);
-    assert(is_equal(after_copy, after));
-
     // test pop book
     char book = find_book(before, 1);
     assert(book == 'R');
-    bookcase_t *before_pop = pop_book(before, 1);
-    print_bookcase(before_pop);
-    print_bookcase(popped);
-    assert(is_equal(before_pop, popped));
+    bookcase_t *before_popped = pop_book(before, 1);
+
+    assert(is_equal(before_popped, popped));
 
     // test push book
-    bookcase_t *before_push = push_book(before_pop, 0, book);
-    assert(is_equal(before_push, after));
+    bookcase_t *before_pushed = push_book(before_popped, 0, book);
+    assert(is_equal(before_pushed, after));
 
-    // test make baby case from parent case
+    // ? edge cases
 
-    // test some sort of flow
+    free(before);
+    free(popped);
+    free(after);
+    free(before_popped);
+    free(before_pushed);
+
+    // ! make baby case from parent
+
+    // ! test some sort of flow
 
     printf("all test pass\n");
 }
